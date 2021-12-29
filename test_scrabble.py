@@ -23,7 +23,7 @@ def test_pula_liter_init():
 
 
 def test_pula_liter_wez_plytke(monkeypatch):
-    def bez_mieszania(l):
+    def bez_mieszania(k):
         return
     monkeypatch.setattr('scrabble.shuffle', bez_mieszania)
     pula = PulaLiter()
