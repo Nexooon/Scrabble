@@ -1,4 +1,4 @@
-from scrabble import Plytka, PulaLiter
+from scrabble import Plytka, PulaLiter, Stojak
 
 
 def test_plytka_init():
@@ -32,3 +32,65 @@ def test_pula_liter_wez_plytke(monkeypatch):
     assert len(pula.plytki()) == 99
     assert plytka.litera() == '#'
     assert plytka.wartosc() == 0
+
+
+def test_stojak_init():
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert len(stojak.plytki()) == 7
+    assert stojak.ilosc_plytek() == 7
+
+
+def test_stojak_str(monkeypatch):
+    def bez_mieszania(k):
+        return
+    monkeypatch.setattr('scrabble.shuffle', bez_mieszania)
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert stojak.__str__() == '#, #, Ż, Ź, Z, Z, Z'
+
+
+def test_wez_i_dodaj_plytke_z_puli(monkeypatch):
+    def bez_mieszania(k):
+        return
+    monkeypatch.setattr('scrabble.shuffle', bez_mieszania)
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert stojak.ilosc_plytek() == 7
+    plytka = stojak.plytki()[3]
+    stojak.wez_plytke(plytka)
+    assert stojak.ilosc_plytek() == 6
+    assert stojak.__str__() == '#, #, Ż, Z, Z, Z'
+    stojak.dodaj_plytke_z_puli(pula)
+    assert stojak.ilosc_plytek() == 7
+    assert stojak.__str__() == '#, #, Ż, Z, Z, Z, Z'
+
+
+def test_dodaj_plytke_z_puli_7_plytek():
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert stojak.ilosc_plytek() == 7
+    stojak.dodaj_plytke_z_puli(pula)
+    assert stojak.ilosc_plytek() == 7
+
+
+def test_dodaj_plytke():
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert stojak.ilosc_plytek() == 7
+    plytka = stojak.plytki()[3]
+    stojak.wez_plytke(plytka)
+    assert stojak.ilosc_plytek() == 6
+    plytka = Plytka('A')
+    stojak.dodaj_plytke(plytka)
+    assert stojak.ilosc_plytek() == 7
+    assert plytka in stojak.plytki()
+
+
+def test_dodaj_plytke_7_plytek():
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert stojak.ilosc_plytek() == 7
+    plytka = Plytka('A')
+    stojak.dodaj_plytke(plytka)
+    assert stojak.ilosc_plytek() == 7

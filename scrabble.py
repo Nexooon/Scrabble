@@ -166,8 +166,41 @@ class PulaLiter:
 
 
 class Stojak:
-    def __init__(self):
-        pass
+    def __init__(self, pula_liter):
+        self._plytki = []
+        # for i in range(7):
+        #     self._plytki.append(pula_liter.wez_plytke())
+        self.uzupelnij_stojak(pula_liter)
+
+    def __str__(self):
+        str = ''
+        for plytka in self._plytki:
+            str += plytka.litera()
+            str += ', '
+        return str[:-2]
+
+    def plytki(self):
+        return self._plytki
+
+    def dodaj_plytke_z_puli(self, pula):
+        if self.ilosc_plytek() < 7:
+            self._plytki.append(pula.wez_plytke())
+
+    def dodaj_plytke(self, plytka):
+        if self.ilosc_plytek() < 7:
+            self._plytki.append(plytka)
+
+    def wez_plytke(self, plytka):
+        if plytka in self._plytki:
+            self._plytki.remove(plytka)
+            # return plytka
+
+    def ilosc_plytek(self):
+        return len(self._plytki)
+
+    def uzupelnij_stojak(self, pula):
+        while self.ilosc_plytek() < 7:
+            self.dodaj_plytke_z_puli(pula)
 
 
 class Gracz:
