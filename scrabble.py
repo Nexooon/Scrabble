@@ -11,6 +11,12 @@ class UjemnyWynikError(Exception):
         self.wynik = wynik
 
 
+class UjemnePunktyError(Exception):
+    def __init__(self, punkty):
+        super().__init__('Punkty nie moga byc ujemne')
+        self.punkty = punkty
+
+
 class Plytka:
     def __init__(self, litera):
         self._litera = litera.upper()
@@ -107,6 +113,7 @@ class PulaLiter:
         shuffle(self._plytki)
 
     def wez_plytke(self):
+        # if self._plytki:
         return self._plytki.pop()
 
 # class PulaLiter:
@@ -204,14 +211,16 @@ class Stojak:
 
 
 class Gracz:
-    def __init__(self, nazwa, uklad_liter=None, wynik=0):
+    def __init__(self, nazwa, pula_liter, wynik=0):
         if not nazwa:
             raise NazwaError('Nazwa nie moze byc pusta')
         self._nazwa = nazwa
-        self._uklad_liter = uklad_liter if uklad_liter else []
         if wynik < 0:
-            raise UjemnyWynikError
+            raise UjemnyWynikError(wynik)
         self._wynik = wynik
+        if not pula_liter:
+            raise ValueError('Nalezy podac pule liter')
+        self._stojak = Stojak(pula_liter)
 
     def nazwa(self):
         return self._nazwa
@@ -221,19 +230,22 @@ class Gracz:
             raise NazwaError('Nazwa nie moze byc pusta')
         self._nazwa = nowa_nazwa
 
-    def uklad_liter(self):
-        return self._uklad_liter
-
-    def set_uklad_liter(self, nowy_uklad_liter):
-        self._uklad_liter = nowy_uklad_liter
+    def stojak(self):
+        return self._stojak
 
     def wynik(self):
         return self._wynik
 
     def set_wynik(self, nowy_wynik):
         if nowy_wynik < 0:
-            raise UjemnyWynikError
+            raise UjemnyWynikError(nowy_wynik)
         self._wynik = nowy_wynik
+
+    def dodaj_do_wyniku(self, punkty):
+        if punkty < 0:
+            raise UjemnePunktyError(punkty)
+        else:
+            self._wynik += punkty
 
     def oblicz_wynik(self):
         pass
