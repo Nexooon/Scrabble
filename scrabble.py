@@ -252,7 +252,57 @@ class Gracz:
 
 
 class Plansza:
-    pass
+    def __init__(self):
+        self._plansza = [["   " for i in range(15)] for j in range(15)]
+        self._plansza[7][7] = " * "
+
+    def __str__(self):
+        plansza_str = '      '
+        for kolumna_cyfra in range(10):
+            plansza_str += str(kolumna_cyfra)
+            plansza_str += '     '
+        for kolumna_cyfra in range(10, 15):
+            plansza_str += str(kolumna_cyfra)
+            plansza_str += '    '
+        # plansza_str += "\n   _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n"
+        plansza_str += '\n   |-----------------------------------------------------------------------------------------|\n'
+
+        plansza = self._plansza
+        for wiersz_cyfra in range(len(plansza)):
+            plansza_str += str(wiersz_cyfra)
+            if wiersz_cyfra < 10:
+                plansza_str += '  | '
+            else:
+                plansza_str += ' | '
+
+            for letter in plansza[wiersz_cyfra]:
+                plansza_str += letter
+                plansza_str += ' | '
+            plansza_str += '\n   |-----------------------------------------------------------------------------------------|\n'
+
+        return plansza_str
+
+    def plansza(self):
+        return self._plansza
+
+    def dodaj_slowo(self, slowo, wspolrzedne, kierunek, gracz, pula):
+        kierunek = kierunek.lower()
+        slowo = slowo.upper()
+
+        if kierunek == 'prawo':
+            for i in range(len(slowo)):
+                self._plansza[wspolrzedne[0]][wspolrzedne[1]+i] = ' ' + slowo[i] + ' '
+
+        if kierunek == 'dol':
+            for i in range(len(slowo)):
+                self._plansza[wspolrzedne[0]+i][wspolrzedne[1]] = ' ' + slowo[i] + ' '
+
+        # co jesli dokladasz tylko litery do istniejacego na planszy slowa
+        for litera in slowo:
+            for plytka in gracz._stojak._plytki:
+                if plytka._litera == litera:
+                    gracz._stojak.wez_plytke(plytka)
+        gracz._stojak.uzupelnij_stojak(pula)
 
 
 class Slowo:
@@ -261,3 +311,7 @@ class Slowo:
 
 class Bot(Gracz):
     pass
+
+
+# plansza = Plansza()
+# print(str(plansza))

@@ -1,4 +1,4 @@
-from scrabble import Plytka, PulaLiter, Stojak, Gracz
+from scrabble import Plytka, PulaLiter, Stojak, Gracz, Plansza
 from scrabble import NazwaError, UjemnyWynikError, UjemnePunktyError
 import pytest
 
@@ -176,3 +176,25 @@ def test_dodaj_do_wyniku_ujemne():
     assert gracz.wynik() == 10
     with pytest.raises(UjemnePunktyError):
         gracz.dodaj_do_wyniku(-3)
+
+
+def test_plansza_init():
+    plansza = Plansza()
+    assert len(plansza.plansza()) == 15
+    assert plansza.plansza()[7][7] == ' * '
+
+
+def test_plansza_dodaj_slowo():
+    plansza = Plansza()
+    pula = PulaLiter()
+    gracz = Gracz('Adam', pula)
+    plansza.dodaj_slowo('TEST', (0, 0), 'prawo', gracz, pula)
+    assert plansza.plansza()[0][0] == ' T '
+    assert plansza.plansza()[0][1] == ' E '
+    assert plansza.plansza()[0][2] == ' S '
+    assert plansza.plansza()[0][3] == ' T '
+    assert gracz.stojak().ilosc_plytek() == 7
+
+
+def test_plansza_dodaj_slowo_brak_liter_u_gracza():
+    pass
