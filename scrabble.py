@@ -117,7 +117,7 @@ class PulaLiter:
         self.dodaj_plytki(Plytka('Z'), 5)
         self.dodaj_plytki(Plytka('ź'), 1)
         self.dodaj_plytki(Plytka('ż'), 1)
-        # self.dodaj_plytki(Plytka('#'), 2)
+        self.dodaj_plytki(Plytka('#'), 2)
         shuffle(self._plytki)
 
     def wez_plytke(self):
@@ -417,10 +417,17 @@ class Slowo:
 
         litery_na_planszy = ''
         potrzebne_plytki = ''
+        wartosc_pustej_plytki = ''
 
         if self._slowo != '':
 
             #  podanie litery w miejsce #
+            if '#' in self._slowo:
+                while len(wartosc_pustej_plytki) != 1:
+                    index_zamienionej_plytki = self._slowo.index("#")
+                    wartosc_pustej_plytki = input('Podaj jaka litere ma reprezentowac pusta plytka: ')
+                    wartosc_pustej_plytki = wartosc_pustej_plytki.upper()
+                    self._slowo = self._slowo[:self._slowo.index("#")] + wartosc_pustej_plytki + self._slowo[(self._slowo.index("#")+1):]
 
             #  sprawdzenie czy slowo znajduje sie w slowniku
             if self._slowo.lower() not in slownik:
@@ -428,6 +435,10 @@ class Slowo:
             # czy_poprawne = czy_slowo_ze_slownika(self._slowo)
             # if not czy_poprawne:
             #     pass
+
+            #  wprowadzenie # z powrotem do slowa, jesli byl uzyty
+            if wartosc_pustej_plytki != '':
+                self._slowo = self._slowo[:index_zamienionej_plytki] + '#' + self._slowo[(index_zamienionej_plytki)+1:]
 
             #  sprawdzenie czy wspolrzedne sa na planszy
             if self._wspolrzedne[0] > 14 or self._wspolrzedne[0] < 0 or self._wspolrzedne[1] > 14 or self._wspolrzedne[1] < 0:
