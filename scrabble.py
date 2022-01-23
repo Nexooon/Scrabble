@@ -350,7 +350,6 @@ class Plansza:
         kierunek = kierunek.lower()
         slowo = slowo.upper()
 
-        # co jesli dokladasz tylko litery do istniejacego na planszy slowa
         potrzebne_plytki = ''
         litery_na_planszy = litery_z_planszy(slowo, kierunek, self, wspolrzedne)
         for i in range(len(slowo)):
@@ -434,6 +433,10 @@ class Slowo:
             if self._wspolrzedne[0] > 14 or self._wspolrzedne[0] < 0 or self._wspolrzedne[1] > 14 or self._wspolrzedne[1] < 0:
                 return 'Wspolrzedne poczatkowe nie znajduja sie na planszy.'
 
+            #  Sprawdzenie czy slowo miesci sie na planszy
+            if (self._kierunek == 'prawo' and (self._wspolrzedne[1] + len(self._slowo)) >= 16) or (self._kierunek == 'dol' and (self._wspolrzedne[0] + len(self._slowo)) >= 16):
+                return 'Slowo wykracza poza granice planszy.'
+
             #  sprawdzenie aktualnie znajdujacych sie na planszy liter(w miejscu kladzenia nowego slowa)
             litery_na_planszy = litery_z_planszy(self._slowo, self._kierunek, self._plansza, self._wspolrzedne)
             # if self._kierunek == 'prawo':
@@ -481,14 +484,24 @@ class Slowo:
                         if stykajace_litery > 2:
                             return 'Podane slowo blednie styka sie z innym slowem.'
 
+            #  Sprawdzenie czy slowo nie laczy sie z innymi plytkami na tej samej linii
+            if self._kierunek == 'prawo':
+                for numer, litera in enumerate(self._slowo):
+                    if self._wspolrzedne[1] != 0 and self._plansza._plansza[self._wspolrzedne[0]][self._wspolrzedne[1]-1] != '   ':
+                        return 'Podane slowo blednie laczy sie z polozonym w tej lini slowem.'
+                    if self._wspolrzedne[1]+len(self._slowo)-1 != 14 and self._plansza._plansza[self._wspolrzedne[0]][self._wspolrzedne[1]+len(self._slowo)] != '   ':
+                        return 'Podane slowo blednie laczy sie z polozonym w tej lini slowem.'
+            if self._kierunek == 'dol':
+                for numer, litera in enumerate(self._slowo):
+                    if self._wspolrzedne[0] != 0 and self._plansza._plansza[self._wspolrzedne[0]-1][self._wspolrzedne[1]] != '   ':
+                        return 'Podane slowo blednie laczy sie z polozonym w tej lini slowem.'
+                    if self._wspolrzedne[0]+len(self._slowo)-1 != 14 and self._plansza._plansza[self._wspolrzedne[0]+len(self._slowo)][self._wspolrzedne[1]] != '   ':
+                        return 'Podane slowo blednie laczy sie z polozonym w tej lini slowem.'
+
             #  Sprawdzenie czy gracz posiada potrzebne plytki
             for litera in potrzebne_plytki:
                 if litera not in str(self._gracz._stojak) or potrzebne_plytki.count(litera) > str(self._gracz._stojak).count(litera):
                     return 'Brakuje plytek do ulozenia podanego slowa.'
-
-            #  Sprawdzenie czy slowo miesci sie na planszy
-            if (self._kierunek == 'prawo' and (self._wspolrzedne[1] + len(self._slowo)) >= 16) or (self._kierunek == 'dol' and (self._wspolrzedne[0] + len(self._slowo)) >= 16):
-                return 'Slowo wykracza poza granice planszy.'
 
             #  Sprawdzenie czy pierwsze slowo przechodzie przez (7, 7)
             if self._numer_rundy == 1 and self._gracz == self._gracze[0]:
