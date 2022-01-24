@@ -26,6 +26,14 @@ class BrakDostepuError(PermissionError):
 
 
 class Plytka:
+    '''
+    Klasa Plytka. Posiada atrybuty:
+    :param _litera: litera na plytce
+    :type _litera: str
+
+    :param _wartosc: wartosc punktowa plytki
+    :type _wartosc: int
+    '''
     def __init__(self, litera):
         self._litera = litera.upper()
         litery_wartosci = {
@@ -73,6 +81,12 @@ class Plytka:
 
 
 class PulaLiter:
+    '''
+    Klasa PulaLiter. Posiada atrybuty:
+    :param _plytki: dostepne w puli plytki
+    :type _plytki: list
+    '''
+
     def __init__(self):
         self._plytki = []
         self.dodaj_poczatkowa_pule_liter()
@@ -118,14 +132,22 @@ class PulaLiter:
         self.dodaj_plytki(Plytka('ź'), 1)
         self.dodaj_plytki(Plytka('ż'), 1)
         self.dodaj_plytki(Plytka('#'), 2)
-        shuffle(self._plytki)
+        self.wymieszaj_plytki()
 
     def wez_plytke(self):
-        # if self._plytki:
         return self._plytki.pop()
+
+    def wymieszaj_plytki(self):
+        shuffle(self._plytki)
 
 
 class Stojak:
+    '''
+    Klasa Stojak. Posiada atrybuty:
+    :param _plytki: plytki znajdujace sie na stojaku
+    :type _litera: list
+    '''
+
     def __init__(self, pula_liter):
         self._plytki = []
         self.uzupelnij_stojak(pula_liter)
@@ -151,7 +173,6 @@ class Stojak:
     def wez_plytke(self, plytka):
         if plytka in self._plytki:
             self._plytki.remove(plytka)
-            # return plytka
 
     def ilosc_plytek(self):
         return len(self._plytki)
@@ -160,8 +181,32 @@ class Stojak:
         while self.ilosc_plytek() < 7:
             self.dodaj_plytke_z_puli(pula)
 
+    def wymien_plytki(self, litery, pula):
+        litery = litery.upper()
+        for litera in litery:
+            if litera not in self.__str__():
+                raise ValueError('Na stojaku nie ma wszystkich wymienionych plytek.')
+            for plytka in self._plytki:
+                if plytka._litera == litera:
+                    pula.dodaj_plytki(Plytka(litera), 1)
+                    self.wez_plytke(plytka)
+                    break
+        pula.wymieszaj_plytki()
+        self.uzupelnij_stojak(pula)
+
 
 class Gracz:
+    '''
+    Klasa Gracz. Posiada atrybuty:
+    :param _nazwa: nazwa gracza
+    :type _nazwa: str
+
+    :param _wynik: wynik gracza
+    :type _wynik: int
+
+    :param _stojak: stojak gracza
+    :type _stojak: Stojak
+    '''
     def __init__(self, nazwa, pula_liter, wynik=0):
         if not nazwa:
             raise NazwaError('Nazwa nie moze byc pusta')
@@ -201,11 +246,14 @@ class Gracz:
         else:
             self._wynik += punkty
 
-    def oblicz_wynik(self):
-        pass
-
 
 class Bot(Gracz):
+    '''
+    Klasa Bot. Dziedziczy po klasie Gracz
+    Posiada atrybuty:
+    :param _slownik_punkty: przechowuje slowa ze slownika posortowane malejaco wzgledem punktow
+    :type _slownik_punkty: dict
+    '''
     def __init__(self, nazwa, pula_liter, wynik=0):
         super().__init__(nazwa, pula_liter, wynik)
         slowa_punkty = {}
@@ -224,48 +272,9 @@ class Bot(Gracz):
         except PermissionError:
             raise BrakDostepuError('Nie mozna odczytac pliku (brak dostepu)')
 
-        posortowane_punkty = sorted(slowa_punkty.items(), key=lambda x:x[1], reverse=True)
+        posortowane_punkty = sorted(slowa_punkty.items(), key=lambda x: x[1], reverse=True)
         slowa_punkty = dict(posortowane_punkty)
         self._slownik_punkty = slowa_punkty
-
-    def slowa_mozliwe_do_utworzenia(self):
-        slownik = []
-        try:
-            with open('slowa.txt', 'r') as handle:
-                for slowo in handle:
-                    slowo = slowo.rstrip('\n')
-                    if len(slowo) <= 5:
-                        slownik.append(slowo)
-        except FileNotFoundError:
-            raise NieZnalezionoPlikuSlownikError('Brak pliku slownik.txt')
-        except PermissionError:
-            raise BrakDostepuError('Nie mozna odczytac pliku (brak dostepu)')
-
-        slowa_mozliwe_do_utworzenia = []
-        zgodne_litery = 0
-        for slowo in slownik:
-            for litera in slowo:
-                litera = litera.upper()
-                if litera not in str(self._stojak) or slowo.count(litera) > str(self._stojak).count(litera):
-                    continue
-                else:
-                    zgodne_litery += 1
-            if zgodne_litery == len(slowo):
-                slowo = slowo.upper()
-                slowa_mozliwe_do_utworzenia.append(slowo)
-            zgodne_litery = 0
-        return slowa_mozliwe_do_utworzenia
-
-    def dodaj_punkty_do_slow(self, slowa_mozliwe_do_utworzenia):
-        slowa_punkty = {}
-        for slowo in slowa_mozliwe_do_utworzenia:
-            punkty = 0
-            for litera in slowo:
-                punkty += Plytka(litera)._wartosc
-            slowa_punkty[slowo] = punkty
-        posortowane_punkty = sorted(slowa_punkty.items(), key=lambda x:x[1], reverse=True)
-        slowa_punkty = dict(posortowane_punkty)
-        return slowa_punkty
 
     def slowa_do_dodania(self):
         slowa_mozliwe_do_utworzenia = {}
@@ -284,9 +293,13 @@ class Bot(Gracz):
         return slowa_mozliwe_do_utworzenia
 
     def dodaj_slowo(self, plansza, pula_liter, numer_rundy, pominiete_tury, gracze):
-        # slowa = self.slowa_mozliwe_do_utworzenia()
-        # slowa_punkty = self.dodaj_punkty_do_slow(slowa)
         slowa_mozliwe_do_dodania = self.slowa_do_dodania().keys()
+        if plansza._plansza[7][7] == ' * ' and slowa_mozliwe_do_dodania:
+            wspolrzedne = (7, 6)
+            kierunek = 'prawo'
+            slowa_lista = list(slowa_mozliwe_do_dodania)
+            slowo = slowa_lista[0]
+            return slowo, wspolrzedne, kierunek, self, pula_liter
         wiersz_numer = 0
         kolumna_numer = 0
         for slowo in slowa_mozliwe_do_dodania:
@@ -294,7 +307,6 @@ class Bot(Gracz):
                 wiersz_numer += 1
                 for litera in wiersz:
                     kolumna_numer += 1
-                    # litera = litera.strip()
                     litera = litera[1:-1]
                     if litera in slowo:
                         wspolrzedne = (wiersz_numer-1, kolumna_numer-1-slowo.index(litera))
@@ -314,6 +326,11 @@ class Bot(Gracz):
 
 
 class Plansza:
+    '''
+    Klasa Plansza. Posiada atrybuty:
+    :param _plansza: lista odpowiadajaca planszy, przechowuje litery z pol na planszy
+    :type _plansza: list
+    '''
     def __init__(self):
         self._plansza = [["   " for i in range(15)] for j in range(15)]
         self._plansza[7][7] = " * "
@@ -329,7 +346,7 @@ class Plansza:
         plansza_str += '\n   |-----------------------------------------------------------------------------------------|\n'
 
         plansza = self._plansza
-        for wiersz_cyfra in range(len(plansza)):
+        for wiersz_cyfra, wiersz in enumerate(plansza):
             plansza_str += str(wiersz_cyfra)
             if wiersz_cyfra < 10:
                 plansza_str += '  | '
@@ -352,9 +369,9 @@ class Plansza:
 
         potrzebne_plytki = ''
         litery_na_planszy = litery_z_planszy(slowo, kierunek, self, wspolrzedne)
-        for i in range(len(slowo)):
-            if litery_na_planszy[i] == ' ':
-                potrzebne_plytki += slowo[i]
+        for numer, litera in enumerate(slowo):
+            if litery_na_planszy[numer] == ' ':
+                potrzebne_plytki += slowo[numer]
 
         for litera in potrzebne_plytki:
             for plytka in gracz._stojak._plytki:
@@ -364,15 +381,39 @@ class Plansza:
         gracz._stojak.uzupelnij_stojak(pula)
 
         if kierunek == 'prawo':
-            for i in range(len(slowo)):
-                self._plansza[wspolrzedne[0]][wspolrzedne[1]+i] = ' ' + slowo[i] + ' '
+            for numer, litera in enumerate(slowo):
+                self._plansza[wspolrzedne[0]][wspolrzedne[1]+numer] = ' ' + slowo[numer] + ' '
 
         if kierunek == 'dol':
-            for i in range(len(slowo)):
-                self._plansza[wspolrzedne[0]+i][wspolrzedne[1]] = ' ' + slowo[i] + ' '
+            for numer, litera in enumerate(slowo):
+                self._plansza[wspolrzedne[0]+numer][wspolrzedne[1]] = ' ' + slowo[numer] + ' '
 
 
 class Slowo:
+    '''
+    Klasa Slowo. Posiada atrybuty:
+    :param _gracz: gracz dodajacy slowo
+    :type _gracz: Gracz
+
+    :param _plansza: plansza na ktora dodawane jest slowo
+    :type _plansza: Plansza
+
+    :param _numer_rundy: aktualny numer rundy
+    :type _numer_rundy: int
+
+    :param _gracze: lista graczy
+    :type _gracze: list
+
+    :param _slowo: dodawane slowo, domyslnie ''
+    :type _slowo: str
+
+    :param _wspolrzedne: wspolrzedne poczatku slowa, domyslnie (0, 0)
+    :type _wspolrzedne: tuple
+
+    :param _kierunek: kierunek wprowadzanego slowa, domyslnie prawo
+    :type _kierunek: str
+    '''
+
     def __init__(self, gracz, plansza, numer_rundy, gracze, slowo='', wspolrzedne=(0, 0), kierunek='prawo'):
         self._slowo = slowo.upper()
         self._wspolrzedne = wspolrzedne
@@ -432,9 +473,6 @@ class Slowo:
             #  sprawdzenie czy slowo znajduje sie w slowniku
             if self._slowo.lower() not in slownik:
                 return 'Podane slowo nie znajduje sie w slowniku. Prosze sprobowac ponownie.'
-            # czy_poprawne = czy_slowo_ze_slownika(self._slowo)
-            # if not czy_poprawne:
-            #     pass
 
             #  wprowadzenie # z powrotem do slowa, jesli byl uzyty
             if wartosc_pustej_plytki != '':
@@ -450,24 +488,12 @@ class Slowo:
 
             #  sprawdzenie aktualnie znajdujacych sie na planszy liter(w miejscu kladzenia nowego slowa)
             litery_na_planszy = litery_z_planszy(self._slowo, self._kierunek, self._plansza, self._wspolrzedne)
-            # if self._kierunek == 'prawo':
-            #     for i in range(len(self._slowo)):
-            #         if self._plansza._plansza[self._wspolrzedne[0]][self._wspolrzedne[1]+i] == '   ' or self._plansza._plansza[self._wspolrzedne[0]][self._wspolrzedne[1]+i] == ' * ':
-            #             litery_na_planszy += ' '
-            #         else:
-            #             litery_na_planszy += self._plansza._plansza[self._wspolrzedne[0]][self._wspolrzedne[1]+i][1]
-            # elif self._kierunek == 'dol':
-            #     for i in range(len(self._slowo)):
-            #         if self._plansza._plansza[self._wspolrzedne[0]+i][self._wspolrzedne[1]] == '   ' or self._plansza._plansza[self._wspolrzedne[0]+i][self._wspolrzedne[1]] == ' * ':
-            #             litery_na_planszy += ' '
-            #         else:
-            #             litery_na_planszy += self._plansza._plansza[self._wspolrzedne[0]+i][self._wspolrzedne[1]][1]
 
             #  Sprawdzenie czy podane slowo pokrywa sie z polozonymi na planszy plytkami
-            for i in range(len(self._slowo)):
-                if litery_na_planszy[i] == ' ':
-                    potrzebne_plytki += self._slowo[i]
-                elif litery_na_planszy[i] != self._slowo[i]:
+            for numer, litera in enumerate(self._slowo):
+                if litery_na_planszy[numer] == ' ':
+                    potrzebne_plytki += self._slowo[numer]
+                elif litery_na_planszy[numer] != self._slowo[numer]:
                     return 'Podane slowo nie pokrywa sie z plytkami na planszy. Prosze sprobowac ponownie.'
 
             #  Sprawdzenie czy podane slowo jest polaczone z innym polozonym slowem
@@ -511,10 +537,10 @@ class Slowo:
 
             #  Sprawdzenie czy gracz posiada potrzebne plytki
             for litera in potrzebne_plytki:
-                if litera not in str(self._gracz._stojak) or potrzebne_plytki.count(litera) > str(self._gracz._stojak).count(litera):
+                if potrzebne_plytki.count(litera) > str(self._gracz._stojak).count(litera):
                     return 'Brakuje plytek do ulozenia podanego slowa.'
 
-            #  Sprawdzenie czy pierwsze slowo przechodzie przez (7, 7)
+            #  Sprawdzenie czy pierwsze slowo przechodzi przez (7, 7)
             if self._numer_rundy == 1 and self._gracz == self._gracze[0]:
                 if self._kierunek == 'prawo':
                     bledne_wspolrzedne = 0
@@ -539,8 +565,6 @@ class Slowo:
             return True
 
         else:
-            if self._numer_rundy == 1 and self._gracz == self._gracze[0]:
-                return 'Prosze nie pomijac pierwszej rundy. Prosze podac slowo.'
             wybor = input('Na pewno chcesz pominac ture? (t/n) ').upper()
             while wybor != 'T' and wybor != 'N':
                 wybor = input('Podano bledna odpowiedz. Na pewno chcesz pominac ture? (t/n)').upper()
@@ -557,6 +581,9 @@ class Slowo:
 
 
 def wczytaj_caly_slownik():
+    '''
+    Wczytuje i zwraca wszystkie slowa z pliku.
+    '''
     slownik = []
     try:
         with open('slowa.txt', 'r') as handle:
@@ -570,32 +597,30 @@ def wczytaj_caly_slownik():
     return slownik
 
 
-def czy_slowo_ze_slownika(slowo):
-    slownik = wczytaj_caly_slownik()
-    if slowo.lower() not in slownik:
-        return False
-    else:
-        return True
-
-
 def litery_z_planszy(slowo, kierunek, plansza, wspolrzedne):
+    '''
+    Zczytuje z planszy aktualnie znajdujace sie litery w miejscu kladzonego slowa.
+    '''
     litery_na_planszy = ''
     if kierunek == 'prawo':
-        for i in range(len(slowo)):
-            if plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+i] == '   ' or plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+i] == ' * ':
+        for numer, litera in enumerate(slowo):
+            if plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+numer] == '   ' or plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+numer] == ' * ':
                 litery_na_planszy += ' '
             else:
-                litery_na_planszy += plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+i][1]
+                litery_na_planszy += plansza._plansza[wspolrzedne[0]][wspolrzedne[1]+numer][1]
     elif kierunek == 'dol':
-        for i in range(len(slowo)):
-            if plansza._plansza[wspolrzedne[0]+i][wspolrzedne[1]] == '   ' or plansza._plansza[wspolrzedne[0]+i][wspolrzedne[1]] == ' * ':
+        for numer, litera in enumerate(slowo):
+            if plansza._plansza[wspolrzedne[0]+numer][wspolrzedne[1]] == '   ' or plansza._plansza[wspolrzedne[0]+numer][wspolrzedne[1]] == ' * ':
                 litery_na_planszy += ' '
             else:
-                litery_na_planszy += plansza._plansza[wspolrzedne[0]+i][wspolrzedne[1]][1]
+                litery_na_planszy += plansza._plansza[wspolrzedne[0]+numer][wspolrzedne[1]][1]
     return litery_na_planszy
 
 
 def tura(aktualny_gracz, plansza, pula_liter, numer_rundy, pominiete_tury, gracze):
+    '''
+    Przeprowadzenie jednej tury rozgrywki.
+    '''
     najmniej_plytek = 7
     for gracz in gracze:
         if gracz.stojak().ilosc_plytek() < najmniej_plytek:
@@ -611,33 +636,55 @@ def tura(aktualny_gracz, plansza, pula_liter, numer_rundy, pominiete_tury, gracz
         else:
             print('\nStojak gracza ' + aktualny_gracz.nazwa() + ': ' + str(aktualny_gracz.stojak()))
 
-            slowo = Slowo(aktualny_gracz, plansza, numer_rundy, gracze)
-            sprawdzone_slowo = False
-            while sprawdzone_slowo is not True:
-                wprowadzane_slowo = input('Podaj slowo, ktore chcesz utworzyc (zostaw puste, aby pominac ture): ')
-                slowo.set_slowo(wprowadzane_slowo)
-                kolumna = input('Podaj numer kolumny: ')
-                try:
-                    kolumna = int(kolumna)
-                except ValueError:
-                    kolumna = input('Nie podano numeru. Podaj numer kolumny: ')
-                while kolumna not in [x for x in range(15)]:
-                    kolumna = int(input('Podano zly numer. Podaj numer kolumny: '))
-                wiersz = int(input('Podaj numer wiersza: '))
-                while wiersz not in [x for x in range(15)]:
-                    wiersz = int(input('Podano zly numer. Podaj numer kolumny: '))
-                wspolrzedne = (wiersz, kolumna)
-                slowo.set_wspolrzedne(wspolrzedne)
-                kierunek = input('Podaj kierunek wprowadzanego slowa(prawo/dol): ')
-                while kierunek != 'prawo' and kierunek != 'dol':
-                    kierunek = input('Nieprawidlowy kierunek. Podaj kierunek wprowadzanego slowa(prawo/dol): ')
-                slowo.set_kierunek(kierunek)
-                sprawdzone_slowo = slowo.sprawdz_slowo()
-                if sprawdzone_slowo is not True:
-                    print(sprawdzone_slowo)
+            wymiana_plytek = input('Chcesz wymienic plytki lub pominąć turę? (t/n): ').upper()
+            while wymiana_plytek != 'T' and wymiana_plytek != 'N':
+                wymiana_plytek = input('Bledna odpowiedz. Chcesz wymienic plytki lub pominac ture? (t/n): ').upper()
+            if wymiana_plytek == 'T':
+                slowo = Slowo(aktualny_gracz, plansza, numer_rundy, gracze)
+
+                litery = input('Podaj litery do wymieniany (wpisz je bez rozdzielania) lub zostaw puste, aby pominac ture: ').upper()
+                for litera in litery:
+                    if litery.count(litera) > aktualny_gracz._stojak.__str__().count(litera):
+                        litery = input('Podano bledne litery. Podaj ktore litery chcesz wymienic (wpisz je bez rozdzielania): ').upper()
+                aktualny_gracz._stojak.wymien_plytki(litery, pula_liter)
+
+            else:
+                slowo = Slowo(aktualny_gracz, plansza, numer_rundy, gracze)
+                sprawdzone_slowo = False
+                while sprawdzone_slowo is not True:
+                    wprowadzane_slowo = input('Podaj slowo, ktore chcesz utworzyc: ')
+                    slowo.set_slowo(wprowadzane_slowo)
+
+                    kolumna = None
+                    while kolumna is None or kolumna not in [x for x in range(15)]:
+                        podana_wartosc = input('Podaj numer kulumny: ')
+                        try:
+                            kolumna = int(podana_wartosc)
+                        except ValueError:
+                            print('Prosze podac liczbe z zakresu 0-14.')
+
+                    wiersz = None
+                    while wiersz is None or wiersz not in [x for x in range(15)]:
+                        podana_wartosc = input('Podaj numer wiersza: ')
+                        try:
+                            wiersz = int(podana_wartosc)
+                        except ValueError:
+                            print('Prosze podac liczbe z zakresu 0-14.')
+
+                    wspolrzedne = (wiersz, kolumna)
+                    slowo.set_wspolrzedne(wspolrzedne)
+
+                    kierunek = input('Podaj kierunek wprowadzanego slowa(prawo/dol): ')
+                    while kierunek != 'prawo' and kierunek != 'dol':
+                        kierunek = input('Nieprawidlowy kierunek. Podaj kierunek wprowadzanego slowa(prawo/dol): ')
+                    slowo.set_kierunek(kierunek)
+
+                    sprawdzone_slowo = slowo.sprawdz_slowo()
+                    if sprawdzone_slowo is not True:
+                        print(sprawdzone_slowo)
 
         if slowo._slowo == '':
-            print('Tura zostala pominieta.')
+            print('\nTura zostala pominieta.')
             pominiete_tury += 1
         else:
             plansza.dodaj_slowo(wprowadzane_slowo, wspolrzedne, kierunek, aktualny_gracz, pula_liter)
@@ -656,6 +703,9 @@ def tura(aktualny_gracz, plansza, pula_liter, numer_rundy, pominiete_tury, gracz
 
 
 def rozpocznij_gre():
+    '''
+    Inicjuje rozgrywke, wywoluje pierwsza ture.
+    '''
     plansza = Plansza()
     pula_liter = PulaLiter()
 
@@ -693,6 +743,9 @@ def rozpocznij_gre():
 
 
 def zakoncz_gre(gracze):
+    '''
+    Podsumowuje zakonczona rozgrywke, wypisuje wyniki.
+    '''
     najwyzszy_wynik = 0
     for gracz in gracze:
         if gracz._wynik > najwyzszy_wynik:

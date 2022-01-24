@@ -1,4 +1,5 @@
 from scrabble import Plytka, PulaLiter, Stojak, Gracz, Plansza, Slowo, Bot
+from scrabble import wczytaj_caly_slownik, litery_z_planszy
 from scrabble import NazwaError, UjemnyWynikError, UjemnePunktyError
 import pytest
 
@@ -13,10 +14,6 @@ def test_plytka_mala_litera():
     plytka = Plytka('ą')
     assert plytka.litera() == 'Ą'
     assert plytka.wartosc() == 5
-
-
-# def test_plytka_bledna_litera():
-#     pass
 
 
 def test_pula_liter_init():
@@ -87,6 +84,29 @@ def test_stojak_dodaj_plytke():
     stojak.dodaj_plytke(plytka)
     assert stojak.ilosc_plytek() == 7
     assert plytka in stojak.plytki()
+
+
+def test_stojak_wymien_plytki(monkeypatch):
+    def bez_mieszania(k):
+        return
+    monkeypatch.setattr('scrabble.shuffle', bez_mieszania)
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert str(stojak) == '#, #, Ż, Ź, Z, Z, Z'
+    stojak.wymien_plytki('#ŻZ', pula)
+    assert str(stojak) != '#, #, Ż, Ź, Z, Z, Z'
+    assert len(stojak._plytki) == 7
+
+
+def test_stojak_wymien_plytki_brak_plytek(monkeypatch):
+    def bez_mieszania(k):
+        return
+    monkeypatch.setattr('scrabble.shuffle', bez_mieszania)
+    pula = PulaLiter()
+    stojak = Stojak(pula)
+    assert str(stojak) == '#, #, Ż, Ź, Z, Z, Z'
+    with pytest.raises(ValueError):
+        stojak.wymien_plytki('ABC', pula)
 
 
 def test_stojak_dodaj_plytke_7_plytek():
@@ -178,14 +198,21 @@ def test_gracz_dodaj_do_wyniku_ujemne():
         gracz.dodaj_do_wyniku(-3)
 
 
-def test_bot_slowa_mozliwe_do_utworzenia():
+def test_bot_init():
     pula = PulaLiter()
     bot = Bot('Franek', pula)
-    mozliwe_slowa = bot.slowa_mozliwe_do_utworzenia()
+    assert len(bot._slownik_punkty) > 0
+    assert bot._slownik_punkty['BANAN'] == 7
+
+
+def test_bot_slowa_do_dodania():
+    pula = PulaLiter()
+    bot = Bot('Franek', pula)
+    mozliwe_slowa = bot.slowa_do_dodania()
     assert len(mozliwe_slowa) > 0
 
 
-def test_bot_slowa_mozliwe_do_utworzenia_konkretne_litery(monkeypatch):
+def test_bot_slowa_do_dodania_konkretne_litery(monkeypatch):
     pula = PulaLiter()
 
     def pusty_stojak(f, k):
@@ -206,50 +233,13 @@ def test_bot_slowa_mozliwe_do_utworzenia_konkretne_litery(monkeypatch):
     assert str(stojak) == 'A, B, A, N, N, A, A'
     bot = Bot('Franek', pula)
     bot.set_stojak(stojak)
-    mozliwe_slowa = bot.slowa_mozliwe_do_utworzenia()
+    mozliwe_slowa = bot.slowa_do_dodania()
     assert len(mozliwe_slowa) > 0
     assert 'BANAN' in mozliwe_slowa
     assert 'ANA' in mozliwe_slowa
+    assert mozliwe_slowa['BANAN'] == 7
+    assert mozliwe_slowa['ANA'] == 3
 
-
-def test_bot_dodaj_punkty_do_slow(monkeypatch):
-    pula = PulaLiter()
-
-    def pusty_stojak(f, k):
-        return
-    monkeypatch.setattr('scrabble.Stojak.uzupelnij_stojak', pusty_stojak)
-    stojak = Stojak(pula)
-    a = Plytka('A')
-    b = Plytka('B')
-    n = Plytka('N')
-
-    stojak.dodaj_plytke(a)
-    stojak.dodaj_plytke(b)
-    stojak.dodaj_plytke(a)
-    stojak.dodaj_plytke(n)
-    stojak.dodaj_plytke(n)
-    stojak.dodaj_plytke(a)
-    stojak.dodaj_plytke(a)
-    assert str(stojak) == 'A, B, A, N, N, A, A'
-    bot = Bot('Franek', pula)
-    bot.set_stojak(stojak)
-    mozliwe_slowa = bot.slowa_mozliwe_do_utworzenia()
-
-    slowa_punkty = bot.dodaj_punkty_do_slow(mozliwe_slowa)
-    assert len(slowa_punkty) > 0
-    assert slowa_punkty['BANAN'] == 7
-    assert slowa_punkty['ANA'] == 3
-
-
-def test_bot_dodaj_slowo():
-    plansza = Plansza()
-    pula = PulaLiter()
-    numer_rundy = 1
-    pominiete_tury = 0
-    gracz = Gracz('Kamil', pula)
-    bot = Bot('Franek', pula)
-    gracze = [gracz, bot]
-    bot.dodaj_slowo(plansza, pula, numer_rundy, pominiete_tury, gracze)
 
 def test_plansza_init():
     plansza = Plansza()
@@ -269,16 +259,13 @@ def test_plansza_dodaj_slowo():
     assert gracz.stojak().ilosc_plytek() == 7
 
 
-def test_plansza_dodaj_slowo_brak_liter_u_gracza():
-    pass
-
-
 def test_slowo_init():
     plansza = Plansza()
     pula = PulaLiter()
     gracz = Gracz('Adam', pula)
+    gracze = [gracz]
     numer_rundy = 0
-    slowo = Slowo('marchew', (4, 7), gracz, 'prawo', plansza, numer_rundy)
+    slowo = Slowo(gracz, plansza, numer_rundy, gracze, 'marchew', (4, 7), 'prawo')
     assert slowo.slowo() == 'MARCHEW'
     assert slowo.wspolrzedne() == (4, 7)
     assert slowo.gracz() == gracz
@@ -291,8 +278,9 @@ def test_slowo_set():
     plansza = Plansza()
     pula = PulaLiter()
     gracz = Gracz('Adam', pula)
+    gracze = [gracz]
     numer_rundy = 0
-    slowo = Slowo('marchew', (4, 7), gracz, 'prawo', plansza, numer_rundy)
+    slowo = Slowo(gracz, plansza, numer_rundy, gracze, 'marchew', (4, 7), 'prawo')
     assert slowo.slowo() == 'MARCHEW'
     assert slowo.wspolrzedne() == (4, 7)
     assert slowo.gracz() == gracz
@@ -307,15 +295,28 @@ def test_slowo_set():
     assert slowo.kierunek() == 'dol'
 
 
-def test_slowo_sprawdz_slowo():
-    pass
-
-
 def test_slowo_obliczenie_wyniku():
     plansza = Plansza()
     pula = PulaLiter()
     gracz = Gracz('Adam', pula)
+    gracze = [gracz]
     numer_rundy = 0
-    slowo = Slowo('marchew', (4, 7), gracz, 'prawo', plansza, numer_rundy)
+    slowo = Slowo(gracz, plansza, numer_rundy, gracze, 'marchew', (4, 7), 'prawo')
     slowo.obliczenie_wyniku_slowa()
     assert gracz.wynik() == 11
+
+
+def test_wczytaj_caly_slownik():
+    slownik = wczytaj_caly_slownik()
+    assert len(slownik) > 0
+
+
+def test_litery_z_planszy():
+    pula = PulaLiter()
+    plansza = Plansza()
+    numer_rundy = 1
+    gracz = Gracz('jan', pula)
+    gracze = [gracz]
+    slowo = Slowo(gracz, plansza, numer_rundy, gracze, 'TEST', (7, 7))
+    litery = litery_z_planszy(slowo.slowo(), slowo.kierunek(), plansza, slowo.wspolrzedne())
+    assert litery == '    '
